@@ -32,6 +32,13 @@ func (m *LoRa6100) Open() error {
 		return err
 	}
 	m.s = s
+
+	// TODO:
+	// We should try clearing the serial channel just incase other bytes had
+	// been written before we opened the serial interface.
+	// We could try to write a blank \r\n and expect a any line terminated
+	// properly.
+
 	return nil
 }
 
