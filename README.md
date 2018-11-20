@@ -1,3 +1,4 @@
+[![GoDoc](https://godoc.org/github.com/linux4life798/lora6100?status.svg)](https://godoc.org/github.com/linux4life798/lora6100)
 [![Build Status](https://travis-ci.org/linux4life798/lora6100.svg?branch=master)](https://travis-ci.org/linux4life798/lora6100)
 
 # Description
