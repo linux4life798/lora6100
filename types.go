@@ -20,12 +20,12 @@ var (
 
 type Cmd byte
 
-func (c Cmd) WriteTo(out io.Writer) error {
+func (c Cmd) WriteTo(out io.Writer) (int64, error) {
 	var buf bytes.Buffer
 	buf.Write(CmdPrefix)
 	buf.WriteByte(byte(c))
-	_, err := out.Write(buf.Bytes())
-	return err
+	n, err := out.Write(buf.Bytes())
+	return int64(n), err
 }
 
 const (
@@ -51,7 +51,7 @@ type Parameters struct {
 	AESKey         [16]byte // AES 128 key
 }
 
-func (p *Parameters) ReadFrom(in io.Reader) error {
+func (p *Parameters) ReadFrom(in io.Reader) (int64, error) {
 	// if len(data) != 31 {
 	// 	return fmt.Errorf("Payload is incorrect size. Must be 31 bytes.")
 	// }
@@ -67,11 +67,13 @@ func (p *Parameters) ReadFrom(in io.Reader) error {
 	// // p.NodeID =  = data[9]
 	// p.AESKeySetting = data[10]
 	// // p.AESKey = data[11]
-	return binary.Read(in, binary.BigEndian, p)
+	n := int64(binary.Size(p))
+	return n, binary.Read(in, binary.BigEndian, p)
 }
 
-func (p *Parameters) WriteTo(out io.Writer) error {
-	return binary.Write(out, binary.BigEndian, p)
+func (p *Parameters) WriteTo(out io.Writer) (int64, error) {
+	n := int64(binary.Size(p))
+	return n, binary.Write(out, binary.BigEndian, p)
 }
 
 type RetStatus string
@@ -81,10 +83,11 @@ const (
 	RetStatusError RetStatus = "ERROR"
 )
 
-func (r *RetStatus) ReadFrom(in io.Reader) error {
+func (r *RetStatus) ReadFrom(in io.Reader) (int64, error) {
 	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(in); err != nil {
-		return err
+	n, err := buf.ReadFrom(in)
+	if err != nil {
+		return n, err
 	}
 	switch buf.String() {
 	case string(RetStatusOk):
@@ -93,8 +96,8 @@ func (r *RetStatus) ReadFrom(in io.Reader) error {
 		*r = RetStatusError
 	default:
 		*r = RetStatusError
-		return ErrBadReturnStatus
+		return n, ErrBadReturnStatus
 	}
 
-	return nil
+	return n, nil
 }

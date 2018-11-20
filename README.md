@@ -5,5 +5,6 @@
 This is an interface library for the [NiceRF Lora6100AES](http://www.nicerf.com/product_149_65.html).
 
 # Notes
-* You must shunt one of the control pins to wake up the module.
-  This is incorrectly documented in their manual.
+* This library assumes that the serial `RTS` line is connected to the `SET`
+  pin on the Lora6100 module. This is used to flip the module into settings
+  mode on demand.

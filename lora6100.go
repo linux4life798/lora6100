@@ -7,55 +7,92 @@ package lora6100
 
 import (
 	"bytes"
+	"time"
 
-	"github.com/tarm/serial"
+	"go.bug.st/serial.v1"
+)
+
+const (
+	SettingsModeDelay = time.Millisecond * 20 // minimum seems to be 6ms
 )
 
 type LoRa6100 struct {
-	c *serial.Config
-	s *serial.Port
+	serial.Port
+	portName   string
+	mode       serial.Mode
+	isopen     bool
+	insettings bool // if we are in settings mode
 }
 
-func NewLoRa6100(port string) *LoRa6100 {
+func NewLoRa6100(portName string) *LoRa6100 {
 	m := new(LoRa6100)
-	m.c = &serial.Config{
-		Name: port,
-		Baud: 9600,
-	}
+	m.portName = portName
+	m.mode.BaudRate = 9600
 	return m
 }
 
 func (m *LoRa6100) Open() error {
-	s, err := serial.OpenPort(m.c)
+	p, err := serial.Open(m.portName, &m.mode)
 	if err != nil {
-		m.s = nil
 		return err
 	}
-	m.s = s
+	m.Port = p
+	m.isopen = true
 
 	// TODO:
 	// We should try clearing the serial channel just incase other bytes had
 	// been written before we opened the serial interface.
 	// We could try to write a blank \r\n and expect a any line terminated
 	// properly.
+	if err := m.ResetInputBuffer(); err != nil {
+		// allow port to remain open
+		return err
+	}
+	if err := m.ResetOutputBuffer(); err != nil {
+		// allow port to remain open
+		return err
+	}
 
 	return nil
 }
 
-func (m *LoRa6100) IsOpen() bool {
-	return m.s != nil
+func (m *LoRa6100) Close() error {
+	m.isopen = false
+	return m.Port.Close()
 }
 
-// getLine reads until it sees \r\n
+func (m *LoRa6100) IsOpen() bool {
+	return m.isopen
+}
+
+func (m *LoRa6100) SettingsModeEnable() error {
+	if !m.insettings {
+		m.insettings = true
+		defer time.Sleep(SettingsModeDelay)
+		return m.SetRTS(true)
+	}
+	return nil
+}
+
+func (m *LoRa6100) SettingsModeDisable() error {
+	if m.insettings {
+		time.Sleep(SettingsModeDelay)
+		m.insettings = false
+		return m.SetRTS(false)
+	}
+	return nil
+}
+
+// GetLine reads until it sees \r\n
 // If no error was returned, the buffer will contain the line without \r\n
-func (m *LoRa6100) getLine() (*bytes.Buffer, error) {
+func (m *LoRa6100) GetLine() (*bytes.Buffer, error) {
 	var buf = new(bytes.Buffer)
 	var b = make([]byte, 1)
 	var crSeen, lfSeen bool
 
 	for !(crSeen && lfSeen) {
 		// read one byte
-		if _, err := m.s.Read(b); err != nil {
+		if _, err := m.Read(b); err != nil {
 			return buf, err
 		}
 
@@ -82,8 +119,8 @@ func (m *LoRa6100) getLine() (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-func (m *LoRa6100) writeLineEnding() error {
-	_, err := m.s.Write([]byte(LineEnding))
+func (m *LoRa6100) WriteLineEnding() error {
+	_, err := m.Write([]byte(LineEnding))
 	return err
 }
 
@@ -92,14 +129,22 @@ func (m *LoRa6100) GetVersion() (string, error) {
 		return "", ErrUnopened
 	}
 
-	if err := CmdReadVersion.WriteTo(m.s); err != nil {
+	if err := m.SettingsModeEnable(); err != nil {
 		return "", err
 	}
-	if err := m.writeLineEnding(); err != nil {
+
+	if _, err := CmdReadVersion.WriteTo(m); err != nil {
 		return "", err
 	}
-	resp, err := m.getLine()
+	if err := m.WriteLineEnding(); err != nil {
+		return "", err
+	}
+	resp, err := m.GetLine()
 	if err != nil {
+		return "", err
+	}
+
+	if err := m.SettingsModeDisable(); err != nil {
 		return "", err
 	}
 
@@ -111,20 +156,28 @@ func (m *LoRa6100) GetParameters() (*Parameters, error) {
 		return nil, ErrUnopened
 	}
 
+	if err := m.SettingsModeEnable(); err != nil {
+		return nil, err
+	}
+
 	var p = new(Parameters)
 
-	if err := CmdReadParameters.WriteTo(m.s); err != nil {
+	if _, err := CmdReadParameters.WriteTo(m); err != nil {
 		return nil, err
 	}
-	if err := m.writeLineEnding(); err != nil {
+	if err := m.WriteLineEnding(); err != nil {
 		return nil, err
 	}
-	resp, err := m.getLine()
+	resp, err := m.GetLine()
 	if err != nil {
 		return nil, err
 	}
 
-	err = p.ReadFrom(resp)
+	if err := m.SettingsModeDisable(); err != nil {
+		return nil, err
+	}
+
+	_, err = p.ReadFrom(resp)
 
 	return p, err
 }
@@ -133,18 +186,18 @@ func (m *LoRa6100) ResetParameters() (RetStatus, error) {
 		return RetStatusError, ErrUnopened
 	}
 
-	if err := CmdResetDefault.WriteTo(m.s); err != nil {
+	if _, err := CmdResetDefault.WriteTo(m); err != nil {
 		return RetStatusError, err
 	}
-	if err := m.writeLineEnding(); err != nil {
+	if err := m.WriteLineEnding(); err != nil {
 		return RetStatusError, err
 	}
-	resp, err := m.getLine()
+	resp, err := m.GetLine()
 	if err != nil {
 		return RetStatusError, err
 	}
 	var ret RetStatus
-	if err := ret.ReadFrom(resp); err != nil {
+	if _, err := ret.ReadFrom(resp); err != nil {
 		return RetStatusError, err
 	}
 
@@ -156,21 +209,21 @@ func (m *LoRa6100) SetParameters(p *Parameters) (RetStatus, error) {
 		return RetStatusError, ErrUnopened
 	}
 
-	if err := CmdSetParameters.WriteTo(m.s); err != nil {
+	if _, err := CmdSetParameters.WriteTo(m); err != nil {
 		return RetStatusError, err
 	}
-	if err := p.WriteTo(m.s); err != nil {
+	if _, err := p.WriteTo(m); err != nil {
 		return RetStatusError, err
 	}
-	if err := m.writeLineEnding(); err != nil {
+	if err := m.WriteLineEnding(); err != nil {
 		return RetStatusError, err
 	}
-	resp, err := m.getLine()
+	resp, err := m.GetLine()
 	if err != nil {
 		return RetStatusError, err
 	}
 	var ret RetStatus
-	if err := ret.ReadFrom(resp); err != nil {
+	if _, err := ret.ReadFrom(resp); err != nil {
 		return RetStatusError, err
 	}
 
