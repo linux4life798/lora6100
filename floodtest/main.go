@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/linux4life798/lora6100"
 )
@@ -31,6 +33,7 @@ func (m *Message) ReadFrom(in io.Reader) (int64, error) {
 func main() {
 	info := flag.Bool("info", false, "Show hw version and params on startup (must have RTS connected to SET)")
 	sendmsg := flag.String("msg", "", "The message to send. Must be 4 chars max.")
+	randdelay := flag.Duration("rdelay", time.Duration(0), "Specifies the random delay before retransmission")
 	flag.Parse()
 	args := flag.Args()
 
@@ -87,7 +90,12 @@ func main() {
 
 		if msg.TTL > 0 {
 			msg.TTL--
-			log.Printf("Sending message: %+v\n", msg)
+			var delay time.Duration
+			if *randdelay != time.Duration(0) {
+				delay = time.Duration(rand.Int63n(int64(*randdelay)))
+			}
+			log.Printf("Sending message: %+v in %v\n", msg, delay)
+			time.Sleep(delay)
 			if _, err := msg.WriteTo(l); err != nil {
 				panic(err)
 			}
