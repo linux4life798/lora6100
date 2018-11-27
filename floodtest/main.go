@@ -25,12 +25,18 @@ func (m *Message) String() string {
 
 func (m *Message) WriteTo(out io.Writer) (int64, error) {
 	n := int64(binary.Size(m))
+	if n > 62 {
+		panic("Packet is too large")
+	}
 	err := binary.Write(out, binary.BigEndian, m)
 	return n, err
 }
 
 func (m *Message) ReadFrom(in io.Reader) (int64, error) {
 	n := int64(binary.Size(m))
+	if n > 62 {
+		panic("Packet is too large")
+	}
 	err := binary.Read(in, binary.BigEndian, m)
 	return n, err
 }
