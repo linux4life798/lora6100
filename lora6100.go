@@ -193,6 +193,10 @@ func (m *LoRa6100) ResetParameters() (RetStatus, error) {
 		return RetStatusError, ErrUnopened
 	}
 
+	if err := m.SettingsModeEnable(); err != nil {
+		return RetStatusError, err
+	}
+
 	if _, err := CmdResetDefault.WriteTo(m); err != nil {
 		return RetStatusError, err
 	}
@@ -208,12 +212,20 @@ func (m *LoRa6100) ResetParameters() (RetStatus, error) {
 		return RetStatusError, err
 	}
 
+	if err := m.SettingsModeDisable(); err != nil {
+		return ret, err
+	}
+
 	return ret, nil
 }
 
 func (m *LoRa6100) SetParameters(p *Parameters) (RetStatus, error) {
 	if !m.IsOpen() {
 		return RetStatusError, ErrUnopened
+	}
+
+	if err := m.SettingsModeEnable(); err != nil {
+		return RetStatusError, err
 	}
 
 	if _, err := CmdSetParameters.WriteTo(m); err != nil {
@@ -232,6 +244,10 @@ func (m *LoRa6100) SetParameters(p *Parameters) (RetStatus, error) {
 	var ret RetStatus
 	if _, err := ret.ReadFrom(resp); err != nil {
 		return RetStatusError, err
+	}
+
+	if err := m.SettingsModeDisable(); err != nil {
+		return ret, err
 	}
 
 	return ret, nil
