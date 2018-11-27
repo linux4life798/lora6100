@@ -15,7 +15,7 @@ import (
 type Message struct {
 	ID  uint8
 	TTL uint8
-	Msg [4]byte
+	Msg [40]byte
 }
 
 func (m *Message) WriteTo(out io.Writer) (int64, error) {
