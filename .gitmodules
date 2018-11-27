@@ -1,0 +1,3 @@
+[submodule "utils/rpirtscts"]
+	path = utils/rpirtscts
+	url = https://github.com/mholling/rpirtscts.git
