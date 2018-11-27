@@ -47,6 +47,10 @@ func main() {
 		panic("Provided message is too long")
 	}
 
+	if *datarate > 9 {
+		panic("Datarate must range from 0 to 9 (inclusive)")
+	}
+
 	portName := "/dev/ttyUSB0"
 	if len(args) > 0 {
 		portName = args[0]
