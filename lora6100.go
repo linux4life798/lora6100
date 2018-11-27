@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	SettingsModeDelay = time.Millisecond * 20 // minimum seems to be 6ms
+	SettingsModeInDelay  = time.Millisecond * 20 // minimum seems to be 6ms
+	SettingsModeOutDelay = time.Millisecond * 100
 )
 
 type LoRa6100 struct {
@@ -53,6 +54,11 @@ func (m *LoRa6100) Open() error {
 		return err
 	}
 
+	m.insettings = true
+	if err := m.SettingsModeDisable(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -68,7 +74,7 @@ func (m *LoRa6100) IsOpen() bool {
 func (m *LoRa6100) SettingsModeEnable() error {
 	if !m.insettings {
 		m.insettings = true
-		defer time.Sleep(SettingsModeDelay)
+		defer time.Sleep(SettingsModeInDelay)
 		return m.SetRTS(true)
 	}
 	return nil
@@ -76,7 +82,8 @@ func (m *LoRa6100) SettingsModeEnable() error {
 
 func (m *LoRa6100) SettingsModeDisable() error {
 	if m.insettings {
-		time.Sleep(SettingsModeDelay)
+		time.Sleep(SettingsModeInDelay)
+		defer time.Sleep(SettingsModeOutDelay)
 		m.insettings = false
 		return m.SetRTS(false)
 	}
