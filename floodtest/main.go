@@ -114,6 +114,7 @@ func main() {
 			}
 			log.Printf("Sending message: %s in %v\n", msg.String(), delay)
 			time.Sleep(delay)
+			log.Println("Firing!")
 			if _, err := msg.WriteTo(l); err != nil {
 				panic(err)
 			}
