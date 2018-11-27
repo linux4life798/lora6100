@@ -19,6 +19,10 @@ type Message struct {
 	Msg [40]byte
 }
 
+func (m *Message) String() string {
+	return fmt.Sprintf("ID=%v TTL=%v MSG=\"%s\"\n", m.ID, m.TTL, string(m.Msg[:]))
+}
+
 func (m *Message) WriteTo(out io.Writer) (int64, error) {
 	n := int64(binary.Size(m))
 	err := binary.Write(out, binary.BigEndian, m)
@@ -86,7 +90,7 @@ func main() {
 			panic(err)
 		}
 
-		log.Printf("Read message: %+v\n", msg)
+		log.Printf("Read message: %s\n", msg.String())
 
 		if msg.TTL > 0 {
 			msg.TTL--
@@ -98,7 +102,7 @@ func main() {
 				}
 				delay = time.Duration(r.Int64())
 			}
-			log.Printf("Sending message: %+v in %v\n", msg, delay)
+			log.Printf("Sending message: %s in %v\n", msg.String(), delay)
 			time.Sleep(delay)
 			if _, err := msg.WriteTo(l); err != nil {
 				panic(err)
