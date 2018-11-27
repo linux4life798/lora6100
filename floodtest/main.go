@@ -20,7 +20,7 @@ type Message struct {
 }
 
 func (m *Message) String() string {
-	return fmt.Sprintf("ID=%v TTL=%v MSG=\"%s\"\n", m.ID, m.TTL, string(m.Msg[:]))
+	return fmt.Sprintf("ID=%v TTL=%v MSG=\"%s\"", m.ID, m.TTL, string(m.Msg[:]))
 }
 
 func (m *Message) WriteTo(out io.Writer) (int64, error) {
