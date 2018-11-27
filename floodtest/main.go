@@ -69,7 +69,6 @@ func main() {
 
 	var msg Message
 
-	l.SettingsModeEnable()
 	if len(*sendmsg) > 0 {
 		log.Println("Sending first message")
 		msg.ID = 45
