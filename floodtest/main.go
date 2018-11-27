@@ -39,6 +39,7 @@ func main() {
 	info := flag.Bool("info", false, "Show hw version and params on startup (must have RTS connected to SET)")
 	sendmsg := flag.String("msg", "", "The message to send. Must be 4 chars max.")
 	randdelay := flag.Duration("rdelay", time.Duration(0), "Specifies the random delay before retransmission")
+	datarate := flag.Uint("dr", 3, "Select the datarate [0 to 9]")
 	flag.Parse()
 	args := flag.Args()
 
@@ -68,8 +69,17 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
 		fmt.Printf("Parameters: %+v\n", *p)
+
+		if uint(p.RFDataRate) != *datarate {
+			p.RFDataRate = byte(*datarate)
+			r, err := l.SetParameters(p)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("SetParameters: %+v | RetStatus=%v\n", *p, r)
+		}
+
 	}
 
 	var msg Message
