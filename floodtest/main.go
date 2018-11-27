@@ -89,23 +89,13 @@ func main() {
 	var msg Message
 
 	if len(*sendmsg) > 0 {
-		log.Println("Sending first message")
 		msg.ID = 45
 		msg.TTL = 10
 		copy(msg.Msg[:], []byte(*sendmsg))
-		if _, err := msg.WriteTo(l); err != nil {
-			panic(err)
-		}
+		log.Println("Queued first message")
 	}
 
 	for {
-		log.Println("Listening for messages")
-		if _, err := msg.ReadFrom(l); err != nil {
-			panic(err)
-		}
-
-		log.Printf("Read message: %s\n", msg.String())
-
 		if msg.TTL > 0 {
 			msg.TTL--
 			var delay time.Duration
@@ -122,5 +112,11 @@ func main() {
 				panic(err)
 			}
 		}
+
+		log.Println("Listening for messages")
+		if _, err := msg.ReadFrom(l); err != nil {
+			panic(err)
+		}
+		log.Printf("Read message: %s\n", msg.String())
 	}
 }
