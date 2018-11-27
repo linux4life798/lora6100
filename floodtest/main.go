@@ -1,12 +1,13 @@
 package main
 
 import (
+	CRAND "crypto/rand"
 	"encoding/binary"
 	"flag"
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
+	"math/big"
 	"time"
 
 	"github.com/linux4life798/lora6100"
@@ -91,7 +92,11 @@ func main() {
 			msg.TTL--
 			var delay time.Duration
 			if *randdelay != time.Duration(0) {
-				delay = time.Duration(rand.Int63n(int64(*randdelay)))
+				r, err := CRAND.Int(CRAND.Reader, new(big.Int).SetInt64(int64(*randdelay)))
+				if err != nil {
+					panic(err)
+				}
+				delay = time.Duration(r.Int64())
 			}
 			log.Printf("Sending message: %+v in %v\n", msg, delay)
 			time.Sleep(delay)
