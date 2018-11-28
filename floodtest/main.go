@@ -55,6 +55,18 @@ func (m *Message) RandID() {
 	m.ID = uint8(r.Int64())
 }
 
+func randomDelay(maxDelay time.Duration) time.Duration {
+	if maxDelay == 0 {
+		return 0
+	}
+
+	r, err := CRAND.Int(CRAND.Reader, new(big.Int).SetInt64(int64(maxDelay)))
+	if err != nil {
+		panic(err)
+	}
+	return time.Duration(r.Int64())
+}
+
 func main() {
 	info := flag.Bool("info", false, "Show hw version and params on startup (must have RTS connected to SET)")
 	sendmsg := flag.String("msg", "", "The message to send. Must be 4 chars max.")
@@ -159,7 +171,7 @@ func main() {
 				msg.TTL = MsgTTL
 				msg.RandID()
 				copy(msg.Msg[:], line) // will copy at most len(msg.Msg)
-				send(msg, 0)
+				send(msg, randomDelay(*randdelay))
 			}
 		}()
 	}
@@ -177,16 +189,7 @@ func main() {
 
 		if msg.TTL > 0 {
 			msg.TTL--
-			var delay time.Duration
-			if *randdelay != time.Duration(0) {
-				r, err := CRAND.Int(CRAND.Reader, new(big.Int).SetInt64(int64(*randdelay)))
-				if err != nil {
-					panic(err)
-				}
-				delay = time.Duration(r.Int64())
-			}
-
-			send(msg, delay)
+			send(msg, randomDelay(*randdelay))
 		}
 
 	}
