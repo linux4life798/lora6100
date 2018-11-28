@@ -51,31 +51,35 @@ const (
 	SerialBaudRateUnknown
 )
 
-func (b *SerialBaudRate) FromSpeed(baud int) {
-	switch baud {
-	case 1200:
-		*b = SerialBaudRate1200
-	case 2400:
-		*b = SerialBaudRate2400
-	case 4800:
-		*b = SerialBaudRate4800
-	case 9600:
-		*b = SerialBaudRate9600
-	case 14400:
-		*b = SerialBaudRate14400
-	case 19200:
-		*b = SerialBaudRate19200
-	case 38400:
-		*b = SerialBaudRate38400
-	case 57600:
-		*b = SerialBaudRate57600
-	case 76800:
-		*b = SerialBaudRate76800
-	case 115200:
-		*b = SerialBaudRate115200
-	default:
+var speedToBaud = map[int]SerialBaudRate{
+	1200:   SerialBaudRate1200,
+	2400:   SerialBaudRate2400,
+	4800:   SerialBaudRate4800,
+	9600:   SerialBaudRate9600,
+	14400:  SerialBaudRate14400,
+	19200:  SerialBaudRate19200,
+	38400:  SerialBaudRate38400,
+	57600:  SerialBaudRate57600,
+	76800:  SerialBaudRate76800,
+	115200: SerialBaudRate115200,
+}
+
+func (b *SerialBaudRate) FromSpeed(speed int) {
+	s, ok := speedToBaud[speed]
+	if !ok {
 		*b = SerialBaudRateUnknown
+	} else {
+		*b = s
 	}
+}
+
+func (b SerialBaudRate) GetSpeed() int {
+	for speed, baud := range speedToBaud {
+		if baud == b {
+			return speed
+		}
+	}
+	return -1
 }
 
 type SerialDataBits byte
