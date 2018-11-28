@@ -15,12 +15,12 @@ import (
 const (
 	SettingsModeInDelay  = time.Millisecond * 20 // minimum seems to be 6ms
 	SettingsModeOutDelay = time.Millisecond * 100
+	DefaultBaudRate      = 9600
 )
 
 type LoRa6100 struct {
 	serial.Port
 	portName   string
-	mode       serial.Mode
 	isopen     bool
 	insettings bool // if we are in settings mode
 }
@@ -28,12 +28,13 @@ type LoRa6100 struct {
 func NewLoRa6100(portName string) *LoRa6100 {
 	m := new(LoRa6100)
 	m.portName = portName
-	m.mode.BaudRate = 9600
 	return m
 }
 
 func (m *LoRa6100) Open() error {
-	p, err := serial.Open(m.portName, &m.mode)
+	p, err := serial.Open(m.portName, &serial.Mode{
+		BaudRate: DefaultBaudRate,
+	})
 	if err != nil {
 		return err
 	}
