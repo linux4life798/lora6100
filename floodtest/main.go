@@ -13,6 +13,10 @@ import (
 	"github.com/linux4life798/lora6100"
 )
 
+const (
+	SleepBetweenTX = time.Millisecond * 50
+)
+
 type Message struct {
 	ID  uint8
 	TTL uint8
@@ -92,16 +96,53 @@ func main() {
 
 	}
 
-	var msg Message
+	inbound := make(chan Message, 1000)
+	outbound := make(chan Message) // launches go routine for all sends
+
+	go func() {
+		log.Println("Listening for inbound messages")
+
+		for {
+			var msg Message
+			if _, err := msg.ReadFrom(l); err != nil {
+				panic(err)
+			}
+			inbound <- msg
+		}
+
+	}()
+
+	go func() {
+		log.Println("Started outbound thread")
+
+		for msg := range outbound {
+			log.Printf("TX: %s | Firing!", msg.String())
+			if _, err := msg.WriteTo(l); err != nil {
+				panic(err)
+			}
+			time.Sleep(SleepBetweenTX)
+		}
+	}()
+
+	send := func(msg Message, delay time.Duration) {
+		log.Printf("Sending message: %s in %v\n", msg.String(), delay)
+		go func() {
+			time.Sleep(delay)
+			outbound <- msg
+		}()
+	}
 
 	if len(*sendmsg) > 0 {
+		var msg Message
 		msg.ID = 45
 		msg.TTL = 10
 		copy(msg.Msg[:], []byte(*sendmsg))
-		log.Println("Queued first message")
+		send(msg, 0)
 	}
 
-	for {
+	for msg := range inbound {
+		log.Printf("Read message: %s\n", msg.String())
+
 		if msg.TTL > 0 {
 			msg.TTL--
 			var delay time.Duration
@@ -112,18 +153,9 @@ func main() {
 				}
 				delay = time.Duration(r.Int64())
 			}
-			log.Printf("Sending message: %s in %v\n", msg.String(), delay)
-			time.Sleep(delay)
-			log.Println("Firing!")
-			if _, err := msg.WriteTo(l); err != nil {
-				panic(err)
-			}
+
+			send(msg, delay)
 		}
 
-		log.Println("Listening for messages")
-		if _, err := msg.ReadFrom(l); err != nil {
-			panic(err)
-		}
-		log.Printf("Read message: %s\n", msg.String())
 	}
 }
