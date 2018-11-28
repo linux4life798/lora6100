@@ -16,6 +16,7 @@ import (
 
 const (
 	SleepBetweenTX = time.Millisecond * 50
+	MsgTTL         = 10
 )
 
 type Message struct {
@@ -140,8 +141,14 @@ func main() {
 
 	if len(*sendmsg) > 0 {
 		var msg Message
-		msg.ID = 45
-		msg.TTL = 10
+
+		r, err := CRAND.Int(CRAND.Reader, new(big.Int).SetInt64(100))
+		if err != nil {
+			panic(err)
+		}
+
+		msg.ID = uint8(r.Int64())
+		msg.TTL = MsgTTL
 		copy(msg.Msg[:], []byte(*sendmsg))
 		send(msg, 0)
 	}
