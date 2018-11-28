@@ -52,6 +52,7 @@ func main() {
 	sendmsg := flag.String("msg", "", "The message to send. Must be 4 chars max.")
 	randdelay := flag.Duration("rdelay", time.Duration(0), "Specifies the random delay before retransmission")
 	datarate := flag.Uint("dr", 3, "Select the datarate [0 to 9]")
+	inputmsg := flag.Bool("imsg", false, "Enables the console message send feature")
 	flag.Parse()
 	args := flag.Args()
 
@@ -132,6 +133,13 @@ func main() {
 	}()
 
 	send := func(msg Message, delay time.Duration) {
+		r, err := CRAND.Int(CRAND.Reader, new(big.Int).SetInt64(100))
+		if err != nil {
+			panic(err)
+		}
+		msg.ID = uint8(r.Int64())
+		msg.TTL = MsgTTL
+
 		log.Printf("Sending message: %s in %v\n", msg.String(), delay)
 		go func() {
 			time.Sleep(delay)
@@ -139,16 +147,22 @@ func main() {
 		}()
 	}
 
+	if *inputmsg {
+		go func() {
+			log.Println("Launching console message scanner")
+			for {
+				var line string
+				fmt.Scanln(&line)
+				log.Printf("Console msg: %s", line)
+				var msg Message
+				copy(msg.Msg[:], line) // will copy at most len(msg.Msg)
+				send(msg, 0)
+			}
+		}()
+	}
+
 	if len(*sendmsg) > 0 {
 		var msg Message
-
-		r, err := CRAND.Int(CRAND.Reader, new(big.Int).SetInt64(100))
-		if err != nil {
-			panic(err)
-		}
-
-		msg.ID = uint8(r.Int64())
-		msg.TTL = MsgTTL
 		copy(msg.Msg[:], []byte(*sendmsg))
 		send(msg, 0)
 	}
