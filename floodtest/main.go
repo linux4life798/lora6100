@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"math/big"
+	"os"
 	"time"
 
 	"github.com/linux4life798/lora6100"
@@ -62,6 +63,11 @@ func main() {
 	}
 
 	portName := "/dev/ttyUSB0"
+
+	if _, err := os.Stat("/dev/ttyAMA0"); err == nil {
+		portName = "/dev/ttyAMA0"
+	}
+
 	if len(args) > 0 {
 		portName = args[0]
 	}
@@ -141,7 +147,7 @@ func main() {
 	}
 
 	for msg := range inbound {
-		log.Printf("Read message: %s\n", msg.String())
+		log.Printf("RX: %s\n", msg.String())
 
 		if msg.TTL > 0 {
 			msg.TTL--
