@@ -129,7 +129,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("SetParameters: %+v | RetStatus=%v\n", *p, r)
+			fmt.Printf("SetParameters: %+v | RetStatus=%v\n", newp, r)
 		}
 
 		if err := l.ChangeBaudRate(newp.SerialBaud); err != nil {
