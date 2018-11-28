@@ -47,6 +47,14 @@ func (m *Message) ReadFrom(in io.Reader) (int64, error) {
 	return n, err
 }
 
+func (m *Message) RandID() {
+	r, err := CRAND.Int(CRAND.Reader, new(big.Int).SetInt64(100))
+	if err != nil {
+		panic(err)
+	}
+	m.ID = uint8(r.Int64())
+}
+
 func main() {
 	info := flag.Bool("info", false, "Show hw version and params on startup (must have RTS connected to SET)")
 	sendmsg := flag.String("msg", "", "The message to send. Must be 4 chars max.")
@@ -133,12 +141,6 @@ func main() {
 	}()
 
 	send := func(msg Message, delay time.Duration) {
-		r, err := CRAND.Int(CRAND.Reader, new(big.Int).SetInt64(100))
-		if err != nil {
-			panic(err)
-		}
-		msg.ID = uint8(r.Int64())
-
 		log.Printf("Sending message: %s in %v\n", msg.String(), delay)
 		go func() {
 			time.Sleep(delay)
@@ -155,6 +157,7 @@ func main() {
 				log.Printf("Console msg: %s", line)
 				var msg Message
 				msg.TTL = MsgTTL
+				msg.RandID()
 				copy(msg.Msg[:], line) // will copy at most len(msg.Msg)
 				send(msg, 0)
 			}
@@ -164,6 +167,7 @@ func main() {
 	if len(*sendmsg) > 0 {
 		var msg Message
 		msg.TTL = MsgTTL
+		msg.RandID()
 		copy(msg.Msg[:], []byte(*sendmsg))
 		send(msg, 0)
 	}
