@@ -88,7 +88,7 @@ func (b SerialBaudRate) GetSpeed() int {
 type SerialDataBits byte
 
 const (
-	SerialDataBits7Bits SerialDataBits = iota
+	SerialDataBits7Bits SerialDataBits = iota + 1
 	SerialDataBits8Bits
 )
 
