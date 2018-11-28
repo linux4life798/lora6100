@@ -138,7 +138,6 @@ func main() {
 			panic(err)
 		}
 		msg.ID = uint8(r.Int64())
-		msg.TTL = MsgTTL
 
 		log.Printf("Sending message: %s in %v\n", msg.String(), delay)
 		go func() {
@@ -155,6 +154,7 @@ func main() {
 				fmt.Scanln(&line)
 				log.Printf("Console msg: %s", line)
 				var msg Message
+				msg.TTL = MsgTTL
 				copy(msg.Msg[:], line) // will copy at most len(msg.Msg)
 				send(msg, 0)
 			}
@@ -163,6 +163,7 @@ func main() {
 
 	if len(*sendmsg) > 0 {
 		var msg Message
+		msg.TTL = MsgTTL
 		copy(msg.Msg[:], []byte(*sendmsg))
 		send(msg, 0)
 	}
