@@ -68,6 +68,12 @@ func (m *LoRa6100) Close() error {
 	return m.Port.Close()
 }
 
+func (m *LoRa6100) ChangeBaudRate(baud SerialBaudRate) error {
+	return m.SetMode(&serial.Mode{
+		BaudRate: baud.GetSpeed(),
+	})
+}
+
 func (m *LoRa6100) IsOpen() bool {
 	return m.isopen
 }
