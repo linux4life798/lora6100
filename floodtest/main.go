@@ -73,6 +73,8 @@ func main() {
 	randdelay := flag.Duration("rdelay", time.Duration(0), "Specifies the random delay before retransmission")
 	datarate := flag.Uint("dr", 3, "Select the datarate [0 to 9]")
 	inputmsg := flag.Bool("imsg", false, "Enables the console message send feature")
+	baud := flag.Int("baud", 9600, "The serial baud rate for data transfer")
+
 	flag.Parse()
 	args := flag.Args()
 
@@ -113,13 +115,25 @@ func main() {
 		}
 		fmt.Printf("Parameters: %+v\n", *p)
 
-		if uint(p.RFDataRate) != *datarate {
-			p.RFDataRate = byte(*datarate)
-			r, err := l.SetParameters(p)
+		var newp = *p
+
+		newp.RFDataRate = byte(*datarate)
+
+		newp.SerialBaud.FromSpeed(*baud)
+		if newp.SerialBaud == lora6100.SerialBaudRateUnknown {
+			panic("Invalid baud rate")
+		}
+
+		if newp != *p {
+			r, err := l.SetParameters(&newp)
 			if err != nil {
 				panic(err)
 			}
 			fmt.Printf("SetParameters: %+v | RetStatus=%v\n", *p, r)
+		}
+
+		if err := l.ChangeBaudRate(newp.SerialBaud); err != nil {
+			panic(err)
 		}
 
 	}
