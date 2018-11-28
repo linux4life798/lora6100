@@ -1,3 +1,6 @@
+//go:generate stringer -type=SerialBaudRate
+//go:generate stringer -type=SerialDataBits
+//
 package lora6100
 
 import (
